@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Journal - Daily Reflections</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>✨ Journal</h1>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="entries">
+                    <span class="icon">📝</span>
+                    <span>Entries</span>
+                </button>
+                <button class="nav-btn" data-tab="mood">
+                    <span class="icon">😊</span>
+                    <span>Mood Tracker</span>
+                </button>
+                <button class="nav-btn" data-tab="memories">
+                    <span class="icon">📸</span>
+                    <span>Photo Memories</span>
+                </button>
+                <button class="nav-btn" data-tab="about">
+                    <span class="icon">ℹ️</span>
+                    <span>About</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <p class="footer-text">Created with 💝</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <h2 id="page-title">Daily Entries</h2>
+                    <p class="date-info" id="current-date"></p>
+                </div>
+                <div class="header-actions">
+                    <input type="search" id="search-box" placeholder="Search entries..." class="search-box">
+                </div>
+            </header>
+
+            <!-- Entries Section -->
+            <section id="entries" class="tab-content active">
+                <div class="create-entry">
+                    <button class="btn-primary" id="new-entry-btn">+ New Entry</button>
+                </div>
+
+                <!-- Entry Form Modal -->
+                <div id="entry-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Create New Entry</h3>
+                            <button class="close-btn">&times;</button>
+                        </div>
+                        <form id="entry-form" class="form">
+                            <div class="form-group">
+                                <label for="entry-title">Title</label>
+                                <input type="text" id="entry-title" placeholder="Give your entry a title..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="entry-content">Content</label>
+                                <textarea id="entry-content" placeholder="Write your thoughts here..." rows="8" required></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="entry-mood">How are you feeling?</label>
+                                    <select id="entry-mood">
+                                        <option value="happy">😊 Happy</option>
+                                        <option value="sad">😢 Sad</option>
+                                        <option value="neutral">😐 Neutral</option>
+                                        <option value="excited">🤩 Excited</option>
+                                        <option value="anxious">😰 Anxious</option>
+                                        <option value="grateful">🙏 Grateful</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="entry-tags">Tags</label>
+                                    <input type="text" id="entry-tags" placeholder="e.g., work, family, personal (comma separated)">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Save Entry</button>
+                                <button type="button" class="btn-secondary" id="cancel-entry-btn">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Entries List -->
+                <div id="entries-list" class="entries-list">
+                    <!-- Entries will be populated here -->
+                </div>
+            </section>
+
+            <!-- Mood Tracker Section -->
+            <section id="mood" class="tab-content">
+                <div class="mood-container">
+                    <h3>How are you feeling today?</h3>
+                    <div class="mood-buttons">
+                        <button class="mood-btn" data-mood="happy" data-emoji="😊">
+                            <span class="mood-emoji">😊</span>
+                            <span>Happy</span>
+                        </button>
+                        <button class="mood-btn" data-mood="sad" data-emoji="😢">
+                            <span class="mood-emoji">😢</span>
+                            <span>Sad</span>
+                        </button>
+                        <button class="mood-btn" data-mood="neutral" data-emoji="😐">
+                            <span class="mood-emoji">😐</span>
+                            <span>Neutral</span>
+                        </button>
+                        <button class="mood-btn" data-mood="excited" data-emoji="🤩">
+                            <span class="mood-emoji">🤩</span>
+                            <span>Excited</span>
+                        </button>
+                        <button class="mood-btn" data-mood="anxious" data-emoji="😰">
+                            <span class="mood-emoji">😰</span>
+                            <span>Anxious</span>
+                        </button>
+                        <button class="mood-btn" data-mood="grateful" data-emoji="🙏">
+                            <span class="mood-emoji">🙏</span>
+                            <span>Grateful</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mood-stats">
+                    <h3>Your Mood History</h3>
+                    <div class="mood-chart-container">
+                        <canvas id="mood-chart"></canvas>
+                    </div>
+                    <div class="mood-stats-grid">
+                        <div class="stat-card">
+                            <h4>Most Frequent</h4>
+                            <p id="most-frequent-mood">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Total Moods</h4>
+                            <p id="total-moods">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>This Week</h4>
+                            <p id="week-moods">0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Photo Memories Section -->
+            <section id="memories" class="tab-content">
+                <div class="memories-header">
+                    <h3>Photo Memories</h3>
+                    <button class="btn-primary" id="upload-photo-btn">+ Upload Photo</button>
+                </div>
+
+                <!-- Photo Upload Modal -->
+                <div id="photo-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Upload Photo Memory</h3>
+                            <button class="close-btn">&times;</button>
+                        </div>
+                        <form id="photo-form" class="form">
+                            <div class="form-group">
+                                <label for="photo-file">Choose Photo</label>
+                                <input type="file" id="photo-file" accept="image/*" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="photo-caption">Caption</label>
+                                <textarea id="photo-caption" placeholder="Add a caption for this memory..." rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="photo-date">Date</label>
+                                <input type="date" id="photo-date" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Upload Photo</button>
+                                <button type="button" class="btn-secondary close-btn-form">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Photos Gallery -->
+                <div id="photos-gallery" class="photos-gallery">
+                    <!-- Photos will be populated here -->
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="tab-content">
+                <div class="about-content">
+                    <h3>About Digital Journal</h3>
+                    <p>Welcome to your personal Digital Journal – a beautiful space to capture your thoughts, feelings, and memories.</p>
+                    
+                    <h4>Features:</h4>
+                    <ul>
+                        <li><strong>Daily Entries:</strong> Write and organize your daily journal entries with titles, content, and tags.</li>
+                        <li><strong>Mood Tracker:</strong> Track your emotional journey with mood logging and visual statistics.</li>
+                        <li><strong>Photo Memories:</strong> Store and cherish your favorite moments with photos and captions.</li>
+                        <li><strong>Search & Filter:</strong> Easily find entries by tags or keywords.</li>
+                        <li><strong>Local Storage:</strong> All your data is stored locally and kept private.</li>
+                    </ul>
+
+                    <h4>How to Use:</h4>
+                    <ol>
+                        <li>Click "New Entry" to create a journal entry</li>
+                        <li>Select your mood to track your emotional state</li>
+                        <li>Upload photos to create visual memories</li>
+                        <li>Search through your entries anytime</li>
+                    </ol>
+
+                    <p class="version">Version 1.0 | Built with ❤️</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- View Entry Modal -->
+    <div id="view-entry-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="view-entry-title">Entry</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="view-entry-date" class="entry-date"></p>
+                <p id="view-entry-mood" class="entry-mood"></p>
+                <p id="view-entry-tags" class="entry-tags"></p>
+                <div id="view-entry-content" class="entry-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-danger" id="delete-entry-btn">Delete Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
