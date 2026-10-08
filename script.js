@@ -1,60 +1,106 @@
-// Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
-// App State
 let currentEntryIndex = null;
 let allEntries = [];
 let allPhotos = [];
 let moodHistory = [];
 
-// Initialize App
 function initializeApp() {
     loadDataFromLocalStorage();
+    ensureSampleData();
     setupEventListeners();
     updateCurrentDate();
     renderEntries();
-    initializeMoodChart();
+    renderPhotos();
+    updateMoodStats();
+    renderCurrentMoodState();
 }
 
-// Setup Event Listeners
+function ensureSampleData() {
+    if (allEntries.length === 0) {
+        allEntries = [
+            {
+                id: 1,
+                title: 'Golden Morning Walk',
+                content: 'I woke up before sunrise and took a slow walk while the city was still quiet. The air was cool and the sky looked like watercolor. I felt grateful for the simple luxury of being present.',
+                mood: 'grateful',
+                tags: ['morning', 'nature', 'gratitude'],
+                date: formatDate(new Date()),
+                timestamp: Date.now() - 86400000
+            },
+            {
+                id: 2,
+                title: 'Creative Spark',
+                content: 'Today felt full of possibility. I finally sat down to work on a project I had been postponing, and the ideas started to flow naturally. I want to protect this feeling of momentum.',
+                mood: 'excited',
+                tags: ['work', 'creativity'],
+                date: formatDate(new Date(Date.now() - 2 * 86400000)),
+                timestamp: Date.now() - 2 * 86400000
+            }
+        ];
+    }
+
+    if (allPhotos.length === 0) {
+        allPhotos = [
+            {
+                id: 1,
+                image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=900&q=80',
+                caption: 'Little moments of calm by the lake',
+                date: formatDate(new Date(Date.now() - 3 * 86400000)),
+                timestamp: Date.now() - 3 * 86400000
+            },
+            {
+                id: 2,
+                image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+                caption: 'A soft sunrise and a fresh start',
+                date: formatDate(new Date(Date.now() - 5 * 86400000)),
+                timestamp: Date.now() - 5 * 86400000
+            }
+        ];
+    }
+
+    if (moodHistory.length === 0) {
+        moodHistory = [
+            { mood: 'grateful', date: formatDate(new Date()), timestamp: Date.now() - 86400000 },
+            { mood: 'excited', date: formatDate(new Date(Date.now() - 2 * 86400000)), timestamp: Date.now() - 2 * 86400000 },
+            { mood: 'happy', date: formatDate(new Date(Date.now() - 3 * 86400000)), timestamp: Date.now() - 3 * 86400000 }
+        ];
+    }
+
+    saveDataToLocalStorage();
+}
+
 function setupEventListeners() {
-    // Navigation tabs
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', handleTabSwitch);
     });
 
-    // Entry modal
     document.getElementById('new-entry-btn').addEventListener('click', openEntryModal);
     document.getElementById('entry-form').addEventListener('submit', handleSaveEntry);
     document.getElementById('cancel-entry-btn').addEventListener('click', closeEntryModal);
 
-    // Photo modal
     document.getElementById('upload-photo-btn').addEventListener('click', openPhotoModal);
     document.getElementById('photo-form').addEventListener('submit', handleSavePhoto);
+    document.querySelector('.close-btn-form')?.addEventListener('click', closePhotoModal);
 
-    // Close buttons
     document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('.modal').classList.remove('active');
+        btn.addEventListener('click', function () {
+            const modal = this.closest('.modal');
+            if (modal) modal.classList.remove('active');
         });
     });
 
-    // Mood buttons
     document.querySelectorAll('.mood-btn').forEach(btn => {
         btn.addEventListener('click', handleMoodSelect);
     });
 
-    // Search functionality
     document.getElementById('search-box').addEventListener('input', handleSearch);
-
-    // Delete entry button
     document.getElementById('delete-entry-btn').addEventListener('click', handleDeleteEntry);
 
-    // Modal backdrop click to close
     document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === this) {
                 this.classList.remove('active');
             }
@@ -62,39 +108,30 @@ function setupEventListeners() {
     });
 }
 
-// Tab Switching
 function handleTabSwitch(e) {
     const tabName = e.currentTarget.getAttribute('data-tab');
-    
-    // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     e.currentTarget.classList.add('active');
 
-    // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-
-    // Show selected tab
     document.getElementById(tabName).classList.add('active');
 
-    // Update header
-    const headerTitles = {
+    const titles = {
         entries: 'Daily Entries',
         mood: 'Mood Tracker',
         memories: 'Photo Memories',
         about: 'About'
     };
-    document.getElementById('page-title').textContent = headerTitles[tabName];
+    document.getElementById('page-title').textContent = titles[tabName];
 
-    // Hide search for non-entry tabs
-    document.querySelector('.search-box').style.display = tabName === 'entries' ? 'block' : 'none';
+    const searchBox = document.getElementById('search-box');
+    searchBox.style.display = tabName === 'entries' ? 'block' : 'none';
 
-    // Refresh mood stats when switching to mood tab
     if (tabName === 'mood') {
         updateMoodStats();
     }
 }
 
-// Entry Management
 function openEntryModal() {
     document.getElementById('entry-modal').classList.add('active');
     currentEntryIndex = null;
@@ -115,10 +152,10 @@ function handleSaveEntry(e) {
     const content = document.getElementById('entry-content').value.trim();
     const mood = document.getElementById('entry-mood').value;
     const tagsInput = document.getElementById('entry-tags').value.trim();
-    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
+    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(Boolean) : [];
 
     if (!title || !content) {
-        alert('Please fill in title and content');
+        alert('Please add both a title and your journal entry.');
         return;
     }
 
@@ -128,8 +165,8 @@ function handleSaveEntry(e) {
         content,
         mood,
         tags,
-        date: new Date().toLocaleDateString(),
-        timestamp: new Date().getTime()
+        date: formatDate(new Date()),
+        timestamp: Date.now()
     };
 
     allEntries.unshift(entry);
@@ -142,10 +179,10 @@ function handleSaveEntry(e) {
 function renderEntries(entriesToRender = allEntries) {
     const entriesList = document.getElementById('entries-list');
 
-    if (entriesToRender.length === 0) {
+    if (!entriesToRender.length) {
         entriesList.innerHTML = `
             <div class="empty-state">
-                <p>No entries yet. Start writing to create your first journal entry!</p>
+                <p>No entries yet. Start writing to create your first journal entry.</p>
             </div>
         `;
         return;
@@ -169,7 +206,7 @@ function renderEntries(entriesToRender = allEntries) {
 }
 
 function openViewEntryModal(entryId) {
-    const entry = allEntries.find(e => e.id === entryId);
+    const entry = allEntries.find(item => item.id === entryId);
     if (!entry) return;
 
     currentEntryIndex = allEntries.indexOf(entry);
@@ -177,164 +214,134 @@ function openViewEntryModal(entryId) {
     document.getElementById('view-entry-title').textContent = entry.title;
     document.getElementById('view-entry-date').textContent = `📅 ${entry.date}`;
     document.getElementById('view-entry-mood').textContent = `${getMoodEmoji(entry.mood)} Mood: ${entry.mood}`;
-    document.getElementById('view-entry-tags').innerHTML = entry.tags.length > 0 
+    document.getElementById('view-entry-tags').innerHTML = entry.tags.length
         ? entry.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join('')
-        : '';
+        : 'No tags';
     document.getElementById('view-entry-content').textContent = entry.content;
 
     document.getElementById('view-entry-modal').classList.add('active');
 }
 
 function handleDeleteEntry() {
-    if (currentEntryIndex !== null && confirm('Are you sure you want to delete this entry?')) {
+    if (currentEntryIndex === null) return;
+
+    if (confirm('Are you sure you want to delete this journal entry?')) {
         allEntries.splice(currentEntryIndex, 1);
         saveDataToLocalStorage();
-        document.getElementById('view-entry-modal').classList.remove('active');
         renderEntries();
-        showNotification('Entry deleted successfully!');
+        document.getElementById('view-entry-modal').classList.remove('active');
+        showNotification('Entry deleted.');
     }
 }
 
-// Search functionality
 function handleSearch(e) {
-    const searchQuery = e.target.value.toLowerCase();
-    
-    if (!searchQuery) {
+    const query = e.target.value.toLowerCase();
+
+    if (!query) {
         renderEntries(allEntries);
         return;
     }
 
-    const filtered = allEntries.filter(entry => 
-        entry.title.toLowerCase().includes(searchQuery) ||
-        entry.content.toLowerCase().includes(searchQuery) ||
-        entry.tags.some(tag => tag.toLowerCase().includes(searchQuery))
+    const filtered = allEntries.filter(entry =>
+        entry.title.toLowerCase().includes(query) ||
+        entry.content.toLowerCase().includes(query) ||
+        entry.tags.some(tag => tag.toLowerCase().includes(query))
     );
 
     renderEntries(filtered);
 }
 
-// Mood Tracking
 function handleMoodSelect(e) {
-    const moodBtn = e.currentTarget;
+    const mood = e.currentTarget.getAttribute('data-mood');
     document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('active'));
-    moodBtn.classList.add('active');
+    e.currentTarget.classList.add('active');
 
-    const mood = moodBtn.getAttribute('data-mood');
-    const moodEntry = {
+    moodHistory.unshift({
         mood,
-        date: new Date().toLocaleDateString(),
-        timestamp: new Date().getTime()
-    };
+        date: formatDate(new Date()),
+        timestamp: Date.now()
+    });
 
-    moodHistory.unshift(moodEntry);
     saveDataToLocalStorage();
     updateMoodStats();
-    showNotification(`Mood recorded: ${mood}`);
+    showNotification(`Mood saved: ${mood}`);
 }
 
 function updateMoodStats() {
-    // Count moods
-    const moodCounts = {};
+    const counts = {};
     moodHistory.forEach(entry => {
-        moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+        counts[entry.mood] = (counts[entry.mood] || 0) + 1;
     });
 
-    // Find most frequent mood
     let mostFrequent = '-';
-    if (Object.keys(moodCounts).length > 0) {
-        mostFrequent = Object.keys(moodCounts).reduce((a, b) => 
-            moodCounts[a] > moodCounts[b] ? a : b
-        );
+    if (Object.keys(counts).length) {
+        mostFrequent = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
     }
 
-    document.getElementById('most-frequent-mood').textContent = mostFrequent;
-    document.getElementById('total-moods').textContent = moodHistory.length;
+    document.getElementById('most-frequent-mood').textContent = mostFrequent || '-';
+    document.getElementById('total-moods').textContent = String(moodHistory.length);
 
-    // Count moods from this week
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekMoods = moodHistory.filter(m => new Date(m.timestamp) > weekAgo).length;
-    document.getElementById('week-moods').textContent = weekMoods;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const thisWeek = moodHistory.filter(item => item.timestamp >= weekAgo).length;
+    document.getElementById('week-moods').textContent = String(thisWeek);
 
-    updateMoodChart(moodCounts);
+    updateMoodChart(counts);
 }
 
-function initializeMoodChart() {
+function updateMoodChart(counts) {
     const canvas = document.getElementById('mood-chart');
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    updateMoodChart({});
-}
+    const width = canvas.width = canvas.clientWidth || 600;
+    const height = canvas.height = canvas.clientHeight || 260;
 
-function updateMoodChart(moodCounts) {
-    const canvas = document.getElementById('mood-chart');
-    if (!canvas) return;
+    ctx.clearRect(0, 0, width, height);
 
-    const ctx = canvas.getContext('2d');
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const moods = Object.keys(moodCounts);
-    const counts = Object.values(moodCounts);
-
-    if (moods.length === 0) {
+    const moodLabels = Object.keys(counts);
+    if (!moodLabels.length) {
         ctx.fillStyle = '#7d7d8d';
         ctx.font = '16px Segoe UI';
         ctx.textAlign = 'center';
-        ctx.fillText('No mood data yet', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('No mood data yet', width / 2, height / 2);
         return;
     }
 
-    // Simple bar chart
-    const maxCount = Math.max(...counts);
-    const barWidth = canvas.width / moods.length;
-    const padding = 40;
+    const values = moodLabels.map(label => counts[label]);
+    const maxValue = Math.max(...values, 1);
+    const padding = 35;
+    const chartHeight = height - padding * 2;
+    const barWidth = (width - padding * 2) / moodLabels.length * 0.6;
 
-    // Draw axes
-    ctx.strokeStyle = '#e8e8f0';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padding, canvas.height - padding);
-    ctx.lineTo(canvas.width, canvas.height - padding);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(padding, 0);
-    ctx.lineTo(padding, canvas.height - padding);
-    ctx.stroke();
-
-    // Draw bars
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
     gradient.addColorStop(0, '#f8b4d9');
-    gradient.addColorStop(1, '#c9a8e8');
+    gradient.addColorStop(0.6, '#c9a8e8');
+    gradient.addColorStop(1, '#a8d8ea');
 
-    moods.forEach((mood, index) => {
-        const barHeight = (counts[index] / maxCount) * (canvas.height - 2 * padding);
-        const x = padding + index * barWidth + barWidth / 4;
-        const y = canvas.height - padding - barHeight;
+    moodLabels.forEach((label, index) => {
+        const x = padding + index * ((width - padding * 2) / moodLabels.length) + 18;
+        const valueHeight = (counts[label] / maxValue) * chartHeight;
+        const y = height - padding - valueHeight;
 
         ctx.fillStyle = gradient;
-        ctx.fillRect(x, y, barWidth / 2, barHeight);
+        ctx.fillRect(x, y, barWidth, valueHeight);
 
-        // Label
         ctx.fillStyle = '#3d3d4d';
-        ctx.font = 'bold 12px Segoe UI';
-        ctx.textAlign = 'center';
-        ctx.fillText(getMoodEmoji(mood), x + barWidth / 4, canvas.height - padding + 25);
-
-        // Value
-        ctx.fillStyle = '#7d7d8d';
         ctx.font = '12px Segoe UI';
-        ctx.fillText(counts[index], x + barWidth / 4, y - 10);
+        ctx.textAlign = 'center';
+        ctx.fillText(getMoodEmoji(label), x + barWidth / 2, height - 12);
+        ctx.fillText(String(counts[label]), x + barWidth / 2, y - 8);
     });
 }
 
-// Photo Management
 function openPhotoModal() {
     document.getElementById('photo-modal').classList.add('active');
     document.getElementById('photo-date').valueAsDate = new Date();
+}
+
+function closePhotoModal() {
+    document.getElementById('photo-modal').classList.remove('active');
+    document.getElementById('photo-form').reset();
 }
 
 function handleSavePhoto(e) {
@@ -345,28 +352,26 @@ function handleSavePhoto(e) {
     const date = document.getElementById('photo-date').value;
 
     if (!fileInput.files.length) {
-        alert('Please select a photo');
+        alert('Please choose a photo to upload.');
         return;
     }
 
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function(event) {
-        const photo = {
+    reader.onload = function (event) {
+        allPhotos.unshift({
             id: Date.now(),
             image: event.target.result,
             caption,
             date,
             timestamp: new Date(date).getTime()
-        };
+        });
 
-        allPhotos.unshift(photo);
         saveDataToLocalStorage();
-        document.getElementById('photo-modal').classList.remove('active');
-        document.getElementById('photo-form').reset();
+        closePhotoModal();
         renderPhotos();
-        showNotification('Photo uploaded successfully!');
+        showNotification('Photo memory uploaded!');
     };
 
     reader.readAsDataURL(file);
@@ -375,10 +380,10 @@ function handleSavePhoto(e) {
 function renderPhotos() {
     const gallery = document.getElementById('photos-gallery');
 
-    if (allPhotos.length === 0) {
+    if (!allPhotos.length) {
         gallery.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
-                <p>No photos yet. Upload your first memory!</p>
+                <p>No photos yet. Upload your first memory.</p>
             </div>
         `;
         return;
@@ -386,16 +391,27 @@ function renderPhotos() {
 
     gallery.innerHTML = allPhotos.map(photo => `
         <div class="photo-card">
-            <img src="${photo.image}" alt="Memory" class="photo-image">
+            <img class="photo-image" src="${photo.image}" alt="${escapeHtml(photo.caption || 'Memory')}">
             <div class="photo-info">
                 <p class="photo-date">📅 ${photo.date}</p>
-                <p class="photo-caption">${photo.caption || 'No caption'}</p>
+                <p class="photo-caption">${escapeHtml(photo.caption || 'A lovely memory')}</p>
             </div>
         </div>
     `).join('');
 }
 
-// Utility Functions
+function updateCurrentDate() {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const today = new Date().toLocaleDateString('en-US', options);
+    document.getElementById('current-date').textContent = today;
+}
+
+function renderCurrentMoodState() {
+    const activeMood = moodHistory[0]?.mood || 'happy';
+    const moodButton = document.querySelector(`.mood-btn[data-mood="${activeMood}"]`);
+    if (moodButton) moodButton.classList.add('active');
+}
+
 function getMoodEmoji(mood) {
     const moodEmojis = {
         happy: '😊',
@@ -408,44 +424,39 @@ function getMoodEmoji(mood) {
     return moodEmojis[mood] || '😊';
 }
 
-function updateCurrentDate() {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const today = new Date().toLocaleDateString('en-US', options);
-    document.getElementById('current-date').textContent = today;
+function formatDate(date) {
+    return new Date(date).toLocaleDateString();
 }
 
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function showNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #f8b4d9, #c9a8e8);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        font-weight: 600;
-        z-index: 2000;
-        animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.position = 'fixed';
+    toast.style.right = '20px';
+    toast.style.bottom = '20px';
+    toast.style.background = 'linear-gradient(135deg, #f8b4d9, #c9a8e8)';
+    toast.style.color = '#fff';
+    toast.style.padding = '0.9rem 1.2rem';
+    toast.style.borderRadius = '12px';
+    toast.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+    toast.style.fontWeight = '700';
+    toast.style.zIndex = '2000';
+    document.body.appendChild(toast);
 
     setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+        toast.remove();
+    }, 2500);
 }
 
-// Local Storage Management
 function saveDataToLocalStorage() {
     const data = {
         entries: allEntries,
@@ -456,38 +467,15 @@ function saveDataToLocalStorage() {
 }
 
 function loadDataFromLocalStorage() {
-    const data = localStorage.getItem('journalData');
-    if (data) {
-        const parsed = JSON.parse(data);
+    const saved = localStorage.getItem('journalData');
+    if (!saved) return;
+
+    try {
+        const parsed = JSON.parse(saved);
         allEntries = parsed.entries || [];
         allPhotos = parsed.photos || [];
         moodHistory = parsed.moodHistory || [];
+    } catch (error) {
+        console.error('Could not load saved journal data:', error);
     }
 }
-
-// Add animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
